@@ -1,5 +1,6 @@
 import React from "react";
 import ReactModal from "react-modal";
+import MovieModal from "../../components/movieModal/MovieModal";
 
 import HomePage from "../../pageComponents/HomePage";
 
@@ -13,12 +14,13 @@ export default class HomeContainer extends React.Component {
       isLoaded: false,
       movies: [],
       showMovieDetailsModal: false,
+      movieID: null
     };
   }
 
   async componentDidMount() {
     try {
-      const movieTrendingUrl = `${MOVIE_BASE_URL}/trending/movie/day?page=1`;
+      const movieTrendingUrl = `${MOVIE_BASE_URL}/trending/movie/day?page=1/movie`;
       const responsePromise = await fetch(movieTrendingUrl, {
         headers: {
           Authorization: `Bearer ${process.env.REACT_APP_API_KEY}`,
@@ -26,6 +28,7 @@ export default class HomeContainer extends React.Component {
         },
       });
       const response = await responsePromise.json();
+      console.log(response);
 
       this.setState({
         isLoaded: true,
@@ -39,8 +42,9 @@ export default class HomeContainer extends React.Component {
     }
   }
 
-  handleOpenMovieModal = () => {
-    this.setState({ showMovieDetailsModal: true });
+  handleOpenMovieModal = (movieID) => {
+    this.setState({ showMovieDetailsModal: true, movieID });
+    console.log(movieID);
   };
 
   handleCloseMovieModal = () => {
@@ -63,6 +67,17 @@ export default class HomeContainer extends React.Component {
               onRequestClose={this.handleCloseMovieModal}
             >
               <button onClick={this.handleCloseMovieModal}>X</button>
+
+              {/* HOW TO WE GET THE CARD INFORMATION TO SHOW HERE */}
+
+             <h1>HELLO FRIENDS</h1>
+             {/* <div>
+               {this.state.movieID}
+             </div> */}
+              <MovieModal movieID={this.state.movieID} >
+
+             </MovieModal>
+
             </ReactModal>
           </>
         )}
