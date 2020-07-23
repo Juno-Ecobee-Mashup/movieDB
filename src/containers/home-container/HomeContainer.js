@@ -1,87 +1,108 @@
-import React from "react";
-import ReactModal from "react-modal";
-import MovieModal from "../../components/movieModal/MovieModal";
+import React from 'react'
+import ReactModal from 'react-modal'
 
-import HomePage from "../../pageComponents/HomePage";
+import CardContainer from '../card-container'
 
-import { MOVIE_BASE_URL } from "../../utils/constants";
+import HomePage from '../../pageComponents/HomePage'
+import GenericErrorPage from '../../pageComponents/GenericErrorPage'
+
+import Search from '../../components/search'
+
+import movieApiService from '../../services/movieApiService'
 
 export default class HomeContainer extends React.Component {
   constructor(props) {
-    super(props);
+    super(props)
     this.state = {
       error: null,
-      isLoaded: false,
+      isLoading: true,
       movies: [],
       showMovieDetailsModal: false,
-      movieID: null
-    };
+      currentMovieId: null,
+    }
   }
 
   async componentDidMount() {
     try {
-      const movieTrendingUrl = `${MOVIE_BASE_URL}/trending/movie/day?page=1/movie`;
-      const responsePromise = await fetch(movieTrendingUrl, {
-        headers: {
-          Authorization: `Bearer ${process.env.REACT_APP_API_KEY}`,
-          "Content-Type": "application/json;charset=utf-8",
-        },
-      });
-      const response = await responsePromise.json();
-      console.log(response);
+      const response = await movieApiService.getTrendingToday()
 
       this.setState({
-        isLoaded: true,
+        isLoading: false,
         movies: response.results,
-      });
+      })
     } catch (e) {
       this.setState({
         error: e,
-        isLoaded: true,
-      });
+        isLoading: false,
+      })
     }
   }
 
-  handleOpenMovieModal = (movieID) => {
-    this.setState({ showMovieDetailsModal: true, movieID });
-    console.log(movieID);
-  };
+  handleOpenMovieModal = (movieId) => {
+    this.setState({ showMovieDetailsModal: true, currentMovieId: movieId })
+  }
 
   handleCloseMovieModal = () => {
-    this.setState({ showMovieDetailsModal: false });
-  };
+    this.setState({ showMovieDetailsModal: false })
+  }
+
+  handleSearch = async (movieName) => {
+    try {
+      this.setState({
+        isLoading: true,
+      })
+
+      const response = await movieApiService.getByName(movieName)
+
+      this.setState({
+        isLoading: false,
+        movies: response.results,
+      })
+    } catch (e) {
+      this.setState({
+        error: e,
+        isLoading: false,
+      })
+    }
+  }
 
   render() {
-    const { error, isLoaded, movies } = this.state;
-    const hasMovies = movies && movies.length > 0;
+    const { isError, isLoading, movies, currentMovieId } = this.state
+    const hasMovies = movies && movies.length > 0
+
     return (
       <>
-        {error && <div>Error: {error.message}</div>}
-        {!isLoaded && <div>Loading...</div>}
-        {isLoaded && !error && hasMovies && (
-          <>
-            <HomePage movies={movies} onCardClick={this.handleOpenMovieModal} />
-            <ReactModal
-              isOpen={this.state.showMovieDetailsModal}
-              // gets called for closing the modal via esc / other keys
-              onRequestClose={this.handleCloseMovieModal}
-            >
-              <button onClick={this.handleCloseMovieModal}>X</button>
-
-              {/* HOW TO WE GET THE CARD INFORMATION TO SHOW HERE */}
-
-             <h1>HELLO FRIENDS</h1>
-             {/* <div>
-               {this.state.movieID}
-             </div> */}
-              <MovieModal movieID={this.state.movieID} >
-
-             </MovieModal>
-
-            </ReactModal>
-          </>
-        )}
+        <>
+          {isLoading && <div>Loading...</div>}
+          {isError && (
+            <GenericErrorPage description="Oh no! An error has occurred" />
+          )}
+          <div>
+            <Search onSubmit={this.handleSearch} />
+          </div>
+          {!isLoading && !isError && hasMovies && (
+            <>
+              <HomePage
+                movies={movies}
+                onCardClick={this.handleOpenMovieModal}
+                onSearchClick={this.handleSearch}
+              />
+              <ReactModal
+                isOpen={this.state.showMovieDetailsModal}
+                // gets called for closing the modal via esc / other keys
+                onRequestClose={this.handleCloseMovieModal}
+                ariaHideApp={false}
+              >
+                <button onClick={this.handleCloseMovieModal}>X</button>
+                <CardContainer movieId={currentMovieId} />
+              </ReactModal>
+            </>
+          )}
+          {!isLoading && !isError && !hasMovies && (
+            <GenericErrorPage description="Movies could not be found. Try again." />
+          )}
+        </>
       </>
-    );
+    )
   }
 }
